@@ -14,13 +14,13 @@ import (
 	"github.com/ledgerwatch/turbo-geth/common"
 	"github.com/ledgerwatch/turbo-geth/common/dbutils"
 	"github.com/ledgerwatch/turbo-geth/ethdb"
-	"github.com/ledgerwatch/turbo-geth/ethdb/mdbx"
 	"github.com/ledgerwatch/turbo-geth/log"
 	"github.com/spf13/cobra"
 )
 
 var stateBuckets = []string{
-	dbutils.CurrentStateBucket,
+	dbutils.HashedAccountsBucket,
+	dbutils.HashedStorageBucket,
 	dbutils.ContractCodeBucket,
 	dbutils.PlainStateBucket,
 	dbutils.PlainAccountChangeSetBucket,
@@ -28,7 +28,8 @@ var stateBuckets = []string{
 	dbutils.PlainContractCodeBucket,
 	dbutils.IncarnationMapBucket,
 	dbutils.CodeBucket,
-	dbutils.IntermediateTrieHashBucket,
+	dbutils.IntermediateHashOfAccountBucket,
+	dbutils.IntermediateHashOfStorageBucket,
 	dbutils.AccountsHistoryBucket,
 	dbutils.StorageHistoryBucket,
 	dbutils.TxLookupPrefix,
@@ -363,9 +364,7 @@ func toMdbx(ctx context.Context, from, to string) error {
 	src := ethdb.NewLMDB().Path(from).Flags(func(flags uint) uint {
 		return (flags | lmdb.Readonly) ^ lmdb.NoReadahead
 	}).MustOpen()
-	dst := ethdb.NewMDBX().Path(to).Flags(func(flags uint) uint {
-		return flags | mdbx.WriteMap | mdbx.NoMemInit
-	}).MustOpen()
+	dst := ethdb.NewMDBX().Path(to).MustOpen()
 
 	srcTx, err1 := src.Begin(ctx, nil, ethdb.RO)
 	if err1 != nil {
